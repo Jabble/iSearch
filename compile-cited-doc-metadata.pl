@@ -1,8 +1,9 @@
 #!/usr/bin/perl 
 use strict;
 use warnings;
+use File::Slurp;
 
-## This script extracts unique cited iSearch ids from $direct_cits_csv_file and opens each iSearch XML document with the matching id to extract metadata. 
+## This script extracts unique cited iSearch ids from $cited_docs_file and opens each iSearch XML document with the matching id to extract information. 
 ## It then writes to $cited_doc_data_file: cited_isearch_id,cited_arxiv_id,cited_title,cited_authors,cited_venue,cited_year,raw_xml_file
 
 # Define global variables, such as directories and files
@@ -47,127 +48,106 @@ close OUTPUT;
 ###SUBROUTINES###
 sub Compile_Cited_Doc_Metadata{
 	my ($file) = @_;
-	my $sub_arxiv_id = Find_Xml_Id($file);
-	my $sub_title = Find_Xml_Title($file);
-	my $sub_authors = Find_Xml_Authors($file);
-	my $sub_venue = Find_Xml_Venue($file);
-	my $sub_year = Parse_Year($sub_venue);
-	return ($sub_arxiv_id, $sub_title, $sub_authors, $sub_venue, $sub_year);
+	my @file_contents = read_file($file);
+	my $arxiv_id = "";
+	my $title = "";
+	my $multiline_title = 0;
+	my $authors = "";
+	my $multiline_authors = 0;
+	my $venue = "";
+	
+	foreach my $line (@file_contents) {
+		if ($line =~ /<FULLTEXT>/) {
+			last;
+		}
+		
+		$arxiv_id = Find_Xml_Id($arxiv_id, $line);
+		($multiline_title, $title) = Find_Xml_Title($multiline_title, $title, $line);
+		($multiline_authors, $authors) = Find_Xml_Authors($multiline_authors, $authors, $line);
+		$venue = Find_Xml_Venue($venue,$line);
+	}
+	my $year = Parse_Year($venue);
+	return ($arxiv_id, $title, $authors, $venue, $year);
 }
 
 sub Find_Xml_Id{
-	my ($file) = @_;
-	my $arxiv_id = "";
-	open (SUBIN, '<', $file) or warn "Unable to open $file\n";
-		while (<SUBIN>) {
-			my $line = $_;
-			if ($line =~/<DOCUMENTLINK>\s(.*?)\s<\/DOCUMENTLINK>/) {
-				$arxiv_id  = $1;
-				last;
-			}
-		}
-	close SUBIN;
-	# extract arxiv id from URL
-	if ($arxiv_id =~ /http:\/\/arxiv.org\/abs\/(.*)/) {
-		$arxiv_id = $1;
+	my ($arxiv_id,$line) = @_;
+
+	if ($line =~/<DOCUMENTLINK>\s(.*?)\s<\/DOCUMENTLINK>/) {
+		$arxiv_id  = $1;
+		# extract arxiv id from URL
+		$arxiv_id =~ s/http:\/\/arxiv.org\/abs\/(.*)/$1/;
 	}
 	return $arxiv_id;
 }
 
 sub Find_Xml_Title{
-	my ($file) = @_;
-	my $title = "";
-	my $flag = 0;
-	open (SUBIN, '<', $file) or warn "Unable to open $file\n";
-		while (<SUBIN>) {
-			my $line = $_;
-			if ($line =~/<TITLE>\s([^<\n]*)/) {
-				$title = $1;
-				# remove ','s
-				$title =~ s/,//g;
-				unless ($line =~/<\/TITLE>/) {
-					$flag = 1;
-					next;
-				} else { 
-					last;
-				}
-			}
-			elsif ($flag ==1) {
-				if ($line =~/([^<\n]*)/) {
-					$title = $title." ".$1;
-					# remove ','s
-					$title =~ s/,//g;
-				}
-				if ($line =~/<\/TITLE>/) {
-					$flag = 0;
-					last;
-				}
-			}
+	my ($multiline_title,$title,$line) = @_;
+	
+	if ($multiline_title) {
+		if ($line =~/^([^<]*)<\/TITLE>/) {
+			$title = $title." ".$1;
+			$title =~ s/,//g;
+			$multiline_title = 0;
 		}
-	close SUBIN;
-	return $title;
+		elsif ($line =~/^([^<]*)$/) {
+			$title = $title." ".$1;
+			$title =~ s/,//g;
+		}
+		
+	}
+	elsif ($line =~/<TITLE>\s([^<\n]*)/) {
+		$title = $1;
+		$title =~ s/,//g;
+		
+		unless ($line =~/<\/TITLE>/) {
+			$multiline_title = 1;
+		}
+	}
+	return ($multiline_title,$title);
 }
 
 sub Find_Xml_Authors{
-	my ($file) = @_;
-	my $authors = "";
-	my $flag = 0;
-	open (SUBIN, '<', $file) or warn "Unable to open $file\n";
-		while (<SUBIN>) {
-			my $line = $_;
-			if ($line =~/<AUTHOR>\s([^<\n]*)/) {
-				$authors = $1;
-				# change ','s to ';'s
-				$authors =~ s/,/;/g;
-				unless ($line =~/<\/AUTHOR>/) {
-					$flag = 1;
-					next;
-				} else { 
-					last;
-				}
-			}
-			elsif ($flag ==1) {
-				if ($line =~/([^<\n]*)/) {
-					$authors = $authors."||".$1;
-					# change ','s to ';'s
-					$authors =~ s/,/;/g;
-				}
-				if ($line =~/<\/AUTHOR>/) {
-					$flag = 0;
-					last;
-				}
-			}
+	my ($multiline_authors, $authors, $line) = @_;
+	
+	if ($multiline_authors) {
+		if ($line =~/^([^<]*)<\/AUTHOR>/) {
+			$authors = $authors."||".$1;
+			# change ','s to ';'s
+			$authors =~ s/,/;/g;
+			$multiline_authors = 0;
 		}
-	close SUBIN;
-	return $authors;
+		elsif ($line =~/^([^<]*)$/) {
+			$authors = $authors."||".$1;
+			# change ','s to ';'s
+			$authors =~ s/,/;/g;
+		}
+	}
+	
+	elsif ($line =~/<AUTHOR>\s([^<\n]*)/) {
+		$authors = $1;
+		# change ','s to ';'s
+		$authors =~ s/,/;/g;
+		
+		unless ($line =~/<\/AUTHOR>/) {
+			$multiline_authors = 1;
+		}
+	}
+	return ($multiline_authors, $authors);
 }
 
 sub Find_Xml_Venue{
-	my ($file) = @_;
-	my $venue = "";
-	open (SUBIN, '<', $file) or warn "Unable to open $file\n";
-		while (<SUBIN>) {
-			my $line = $_;
-			if ($line =~/<VENUE>\s(.*?)\s<\/VENUE>/) {
-				$venue  = $1;
-				# remove ','s 
-				$venue =~ s/,//g;
-				# checks twice if $venue contains "&amp;" between anything, and changes to '&'
-				my $count = 0;
-				while ($count < 2) {
-					if ($venue =~/(.+)\&amp\;(.+)/) {
-						$venue = $1."&".$2;
-					}
-					$count++;
-				}
-				# if $venue contains ';' followed by an optional space and at least one letter, change to '||'
-				if ($venue =~/(.+)\;\s*(([A-Z]|[a-z]).+)/) {
-					$venue = $1."||".$2;
-				}
-				last;
-			}
-		}
-	close SUBIN;
+	my ($venue,$line) = @_;
+	
+	if ($line =~/<VENUE>\s(.*?)\s<\/VENUE>/) {
+		$venue  = $1;
+		# remove ',' 
+		$venue =~ s/,//g;
+		# replace '&amp;' with '&'
+		$venue =~ s/(.+)\&amp\;(.+)/$1&$2/g;
+		# replace ';' with '||'
+		$venue =~ s/(.+)\;\s*(([A-Z]|[a-z]).+)/$1||$2/g;
+	}
 	return $venue;
 }
 
