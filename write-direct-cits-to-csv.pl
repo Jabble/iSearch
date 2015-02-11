@@ -4,21 +4,22 @@ use warnings;
 
 ## This script removes double quotes ("") from a direct citation data file $direct_cits_txt_file, and writes $citing_id,$cited_id to $direct_cits_csv_file.
 
-# Take directory path and files as commandline input (make sure to include '/' at then end of the path)
-my ($work_space, $direct_cits_txt_file, $direct_cits_csv_file) = @ARGV;
 
-if (not defined $direct_cits_csv_file) {
-  die "Need directory path, direct citation .txt filename, and your .csv filename \n";
-}
- 
-if (defined $direct_cits_csv_file) {
-  print "Reading '$work_space$direct_cits_txt_file' and writing to '$direct_cits_csv_file'\n";
-}
+# Define global variables with directory path and files here.
+my $work_space = "/"; # directory path (make sure to include '/' at then end of the path)
+my $direct_cits_txt_file = ""; # direct citation TXT filename for INPUT
+my $direct_cits_csv_file = "direct-citations.csv"; #direct citation CSV filename for OUTPUT
 
-# Alternatively, define global variables with directory path and files here.
-#my $work_space = "";
-#my $direct_cits_txt_file = "";
-#my $direct_cits_csv_file = "";
+# Alternatively, take directory path and files as commandline input (make sure to include '/' at then end of the path)
+#my ($work_space, $direct_cits_txt_file, $direct_cits_csv_file) = @ARGV;
+#
+#if (not defined $direct_cits_csv_file) {
+#  die "Need directory path, direct citation .txt filename, and your .csv filename \n";
+#}
+# 
+#if (defined $direct_cits_csv_file) {
+#  print "Reading '$work_space$direct_cits_txt_file' and writing to '$direct_cits_csv_file'\n";
+#}
 
 # Open input and output files
 open (INPUT, '<', $work_space.$direct_cits_txt_file) or die "Unable to open $work_space$direct_cits_txt_file\n";
