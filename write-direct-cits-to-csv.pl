@@ -8,7 +8,7 @@ use warnings;
 my ($work_space, $direct_cits_txt_file, $direct_cits_csv_file) = @ARGV;
 
 if (not defined $direct_cits_csv_file) {
-  die "Need directory path, direct citation .txt file name, and your .csv filename \n";
+  die "Need directory path, direct citation .txt filename, and your .csv filename \n";
 }
  
 if (defined $direct_cits_csv_file) {
