@@ -7,10 +7,10 @@ use File::Slurp;
 ## It then writes to $cited_doc_data_file: cited_isearch_id,cited_arxiv_id,cited_title,cited_authors,cited_venue,cited_year,raw_xml_file
 
 # Define global variables, such as directories and files
-my $work_space = "/data/local/workspace/students/anna-E2013/";
-my $meta_data = "Documents/Meta/";
-my $isearch_xml_data = "Documents/PF+PN_Collection/XML/PF+PN/";
-my $direct_cits_csv_file = "";
+my $work_space = "";
+my $meta_data = "";
+my $isearch_xml_data = "";
+my $direct_cits_csv_file = "direct-citations.csv";
 my $cited_doc_id_file = "cited-doc-ids-unique.txt";
 my $cited_doc_data_file = "cited-doc-metadata.csv";
 
