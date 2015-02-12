@@ -2,18 +2,22 @@
 use strict;
 use warnings;
 
-# This script creates a semicolon (;) delimited file with cited document isearch and arxiv ids, and regular expressions for search. The regular expressions include one compiled from the arxiv id and 5 compiled from data extracted out of  $cited_doc_data_file, including authors, venue and year of publication. 
+## This script creates a semicolon (;) delimited CSV file with cited document isearch and arxiv ids, and regular expressions for search. 
+## The regular expressions include one compiled from the arxiv id and 5 compiled from metadata in $cited_doc_data_file: 
+## including authors, venue and year of publication. 
 
-# Defines global variables, such as directories and files
-my $work_space = "/data/local/workspace/students/anna-E2013/";
-my $cited_doc_data_file = "Documents/Meta/cited-doc-data.csv";
+# Define global variables, such as directories and files
+my $work_space = "";
+my $meta_data = "";
+my $cited_doc_data_file = "cited-doc-metadata.csv";
 my $cited_doc_regex_file = "Documents/Meta/cited-doc-regex-values.csv";
 
 
-# Opens input and output files
-open (INPUT, '<', $work_space.$cited_doc_data_file) or die "Unable to open $work_space$cited_doc_data_file\n";
-open (OUTPUT, '>>', $work_space.$cited_doc_regex_file) or warn "Unable to open $work_space$cited_doc_regex_file\n"; 
+# Open input and output files
+open (INPUT, '<', $work_space.$meta_data.$cited_doc_data_file) or die "Unable to open $work_space$meta_data$cited_doc_data_file\n";
+open (OUTPUT, '>>', $work_space.$meta_data.$cited_doc_regex_file) or warn "Unable to open $work_space$meta_data$cited_doc_regex_file\n"; 
 print OUTPUT "cited_isearch_id;cited_arxiv_id;arxiv_regex;key_one;key_two;key_three;key_four;key_five\n";
+
 
 while (<INPUT>) {
 	my $line = $_;
