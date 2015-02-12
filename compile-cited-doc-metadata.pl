@@ -20,7 +20,7 @@ system ("cut -d ',' -f 2-  $work_space$meta_data$direct_cits_csv_file | sort | u
 # Open input and output files
 open (INPUT, '<', $work_space.$meta_data.$cited_doc_id_file) or die "Unable to open $work_space$meta_data$cited_doc_id_file\n";
 open (OUTPUT, '>>', $work_space.$meta_data.$cited_doc_data_file ) or warn "Unable to open $work_space$cited_doc_data_file\n"; 
-print OUTPUT "cited_isearch_id,cited_arxiv_id,cited_title,cited_authors,cited_venue,cited_year,raw_xml_file\n";
+print OUTPUT "cited_isearch_id,cited_arxiv_id,cited_title,cited_authors,cited_venue,cited_year,raw_xml_filepath\n";
 
 # Find document metadata for each cited iSearch id
 while (<INPUT>) {
