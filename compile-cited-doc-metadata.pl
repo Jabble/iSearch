@@ -33,9 +33,9 @@ while (<INPUT>) {
 		next;
 	}
 
-	my $xml_file = $work_space.$isearch_xml_data.$cited_isearch_id.".xml";
+	my $xml_filepath = $work_space.$isearch_xml_data.$cited_isearch_id.".xml";
 	
-	my ($cited_arxiv_id, $cited_title, $cited_authors, $cited_venue, $cited_year) = Compile_Cited_Doc_Metadata($xml_file);
+	my ($cited_arxiv_id, $cited_title, $cited_authors, $cited_venue, $cited_year) = Compile_Cited_Doc_Metadata($xml_filepath);
 		
 	print "Writing data for: $cited_isearch_id\n";
 	print OUTPUT "$cited_isearch_id,$cited_arxiv_id,$cited_title,$cited_authors,$cited_venue,$cited_year,$xml_file\n";
@@ -46,21 +46,23 @@ close OUTPUT;
 
 
 ###SUBROUTINES###
+
+# Subroutine to compile and return metadata for an iSearch XML file
 sub Compile_Cited_Doc_Metadata{
-	my ($file) = @_;
-	my @file_contents = read_file($file);
+	my ($filepath) = @_;
+	my @file_contents = read_file($filepath); # Read in file as an array of lines
 	my $arxiv_id = "";
 	my $title = "";
-	my $multiline_title = 0;
+	my $multiline_title = 0; # Set flag for title across multiple lines 0
 	my $authors = "";
-	my $multiline_authors = 0;
+	my $multiline_authors = 0; # Set flag for author names across multiple lines 0
 	my $venue = "";
 	
+	# Read throough array of file lines and look for metadata until <FULLTEXT> is encountered
 	foreach my $line (@file_contents) {
 		if ($line =~ /<FULLTEXT>/) {
 			last;
 		}
-		
 		$arxiv_id = Find_Xml_Id($arxiv_id, $line);
 		($multiline_title, $title) = Find_Xml_Title($multiline_title, $title, $line);
 		($multiline_authors, $authors) = Find_Xml_Authors($multiline_authors, $authors, $line);
@@ -70,9 +72,11 @@ sub Compile_Cited_Doc_Metadata{
 	return ($arxiv_id, $title, $authors, $venue, $year);
 }
 
+# Subroutine to extract ArXiv.org document id from file metadata
 sub Find_Xml_Id{
-	my ($arxiv_id,$line) = @_;
-
+	my ($arxiv_id, $line) = @_;
+	
+	# save URL and get id
 	if ($line =~/<DOCUMENTLINK>\s(.*?)\s<\/DOCUMENTLINK>/) {
 		$arxiv_id  = $1;
 		# extract arxiv id from URL
@@ -81,54 +85,65 @@ sub Find_Xml_Id{
 	return $arxiv_id;
 }
 
+# Subroutine to extract document title from file metadata
 sub Find_Xml_Title{
-	my ($multiline_title,$title,$line) = @_;
+	my ($multiline_title, $title, $line) = @_;
 	
+	# check if title is multiple lines long
 	if ($multiline_title) {
+		# save title that ends on line and remove flag
 		if ($line =~/^([^<]*)<\/TITLE>/) {
 			$title = $title." ".$1;
 			$title =~ s/,//g;
 			$multiline_title = 0;
 		}
+		# otherwise save line of title
 		elsif ($line =~/^([^<]*)$/) {
 			$title = $title." ".$1;
 			$title =~ s/,//g;
 		}
 		
 	}
+	# save line with start of title
 	elsif ($line =~/<TITLE>\s([^<\n]*)/) {
 		$title = $1;
 		$title =~ s/,//g;
 		
+		# if title does not end on line, set flag
 		unless ($line =~/<\/TITLE>/) {
 			$multiline_title = 1;
 		}
 	}
-	return ($multiline_title,$title);
+	return ($multiline_title, $title);
 }
 
+# Subroutine to extract document author names from file metadata
 sub Find_Xml_Authors{
 	my ($multiline_authors, $authors, $line) = @_;
 	
+	# check if author names are multiple lines long
 	if ($multiline_authors) {
+		# save names that end on line and remove flag
 		if ($line =~/^([^<]*)<\/AUTHOR>/) {
 			$authors = $authors."||".$1;
 			# change ','s to ';'s
 			$authors =~ s/,/;/g;
 			$multiline_authors = 0;
 		}
+		# otherwise save line of author names
 		elsif ($line =~/^([^<]*)$/) {
 			$authors = $authors."||".$1;
 			# change ','s to ';'s
 			$authors =~ s/,/;/g;
 		}
 	}
-	
+	# save line with start of author names
 	elsif ($line =~/<AUTHOR>\s([^<\n]*)/) {
 		$authors = $1;
 		# change ','s to ';'s
 		$authors =~ s/,/;/g;
 		
+		# if authors do not end on line, set flag
 		unless ($line =~/<\/AUTHOR>/) {
 			$multiline_authors = 1;
 		}
@@ -136,9 +151,11 @@ sub Find_Xml_Authors{
 	return ($multiline_authors, $authors);
 }
 
+# Subroutine to extract document publication venue from file metadata
 sub Find_Xml_Venue{
 	my ($venue,$line) = @_;
 	
+	# save publication venue
 	if ($line =~/<VENUE>\s(.*?)\s<\/VENUE>/) {
 		$venue  = $1;
 		# remove ',' 
@@ -151,6 +168,7 @@ sub Find_Xml_Venue{
 	return $venue;
 }
 
+# Subroutine to identify year in extracted document publication venue
 sub Parse_Year{
 	my ($venue) = @_;
 	my $year = "";
