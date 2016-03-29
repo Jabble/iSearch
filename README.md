@@ -1,3 +1,5 @@
+[Project on Hold until summer 2016]
+
 # iSearch
 This repository contains Python (2.7), Perl, and Bash shell code for working with the iSearch test collection for information retrieval (IR) research. Further information about iSearch can be found at the [iSearch website] (http://itlab.dbit.dk/~isearch/).
 
